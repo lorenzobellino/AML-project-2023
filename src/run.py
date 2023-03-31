@@ -7,7 +7,7 @@ import argparse
 # from utils import parse_args, modify_command_options
 
 
-def run_experiment():
+def run_experiment(args):
     # if args.framework == "federated":
     #     main_module = "fed_setting.main"
     #     main = getattr(importlib.import_module(main_module), "main")
@@ -19,6 +19,24 @@ def run_experiment():
     # else:
     #     raise NotImplementedError
     time.sleep(2)
+
+    if args.step == 1:
+        print("Generating the Dataset for cityscapes")
+        main_module = "dataset_generation.main"
+        main = getattr(importlib.import_module(main_module), "main")
+        main(args)
+    elif args.step == 2:
+        print("Centralized baseline")
+        main_module = "centr_setting.main"
+        main = getattr(importlib.import_module(main_module), "main")
+        main(args)
+    elif args.step == 3:
+        print("Federated + Semantic Segmentation")
+        main_module = "fed_setting.main"
+        main = getattr(importlib.import_module(main_module), "main")
+        main(args)
+    else:
+        raise NotImplementedError
 
 
 if __name__ == "__main__":
@@ -38,8 +56,8 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    print(f"Step {args.step} selected -> {type(args.step)}")
-    run_experiment()
+    print(f"Step {args.step} selected")
+    run_experiment(args)
 
     end = time.time()
     print(f"Elapsed time: {round(end - start, 2)}")
