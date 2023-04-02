@@ -1,0 +1,38 @@
+import wandb
+from config.baseline import *
+from config.transform import *
+
+
+def setup(step):
+    wandb.login()
+    if step == 2:
+        transformer_dictionary = {
+            "random-horizontal-flip": RANDOM_HORIZONTAL_FLIP,
+            "color-jitter": COLOR_JITTER,
+            "random-rotation": RANDOM_ROTATION,
+            "random-crop": RANDOM_CROP,
+            "random-vertical-flip": RANDOM_VERTICAL_FLIP,
+            "central-crop": CENTRAL_CROP,
+            "random-resized-crop": RANDOM_RESIZE_CROP,
+            "resize": RESIZE,
+        }
+
+        config = {
+            "batch_size": BATCH_SIZE,
+            "lr": LR,
+            "momentum": MOMENTUM,
+            "weight_decay": WEIGHT_DECAY,
+            "num_epochs": NUM_EPOCHS,
+            "step_size": STEP_SIZE,
+            "gamma": GAMMA,
+            "transformers": transformer_dictionary,
+        }
+        name = f"Step_2_{PARTITION}_lr{LR}_bs{BATCH_SIZE}_e{NUM_EPOCHS}"
+    elif step == 3:
+        pass
+    wandb.init(
+        project=f"STEP{step}",
+        # entity="lor-bellino",
+        config=config,
+        name=name,
+    )
