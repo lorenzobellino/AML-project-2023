@@ -74,7 +74,7 @@ def create_train_dataloader(transforms):
             root=ROOT_DIR + "data/Citytscapes/",
             transform=transforms,
             cl19=True,
-            filename="train_b.txt",
+            filename="train_B.txt",
         )
     else:
         raise NotImplementedError
@@ -116,6 +116,7 @@ def create_val_dataloader(transforms):
 
 
 def validation(model, dataloader):
+    print("computing miou ...")
     miou = compute_moiu(net=model, val_dataloader=dataloader)
     print("Validation MIoU: {}".format(miou))
     wandb.log({"val/miou": miou})
@@ -157,4 +158,5 @@ def main(args):
     print("creating validation dataloader")
     val_dataloader = create_val_dataloader(transforms)
 
+    print("start the validation loop")
     validation(model, val_dataloader)
