@@ -1,6 +1,7 @@
 import time
 import importlib
 import argparse
+from argparse import RawTextHelpFormatter
 
 # import warnings
 
@@ -8,18 +9,6 @@ import argparse
 
 
 def run_experiment(args):
-    # if args.framework == "federated":
-    #     main_module = "fed_setting.main"
-    #     main = getattr(importlib.import_module(main_module), "main")
-    #     main(args)
-    # elif args.framework == "centralized":
-    #     main_module = "centr_setting.main"
-    #     main = getattr(importlib.import_module(main_module), "main")
-    #     main(args)
-    # else:
-    #     raise NotImplementedError
-    time.sleep(2)
-
     if args.step == 1:
         print("Generating the Dataset for cityscapes")
         main_module = "dataset_generation.main"
@@ -45,6 +34,7 @@ if __name__ == "__main__":
         prog="Federated Learning with semantic segmentation",
         description="Based on the choosen step the program will perform different actions.",
         epilog="Choose a Step and run the program.",
+        formatter_class=RawTextHelpFormatter,
     )
     parser.add_argument(
         "-s",
