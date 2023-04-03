@@ -14,4 +14,4 @@ LOG_FREQUENCY_EPOCH = 3
 NUM_CLASSES = 19
 cl19 = True
 
-ROOT_DIR = "../"
+ROOT_DIR = "./"
