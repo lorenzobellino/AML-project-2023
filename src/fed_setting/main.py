@@ -83,17 +83,17 @@ def create_round_val_dataloader(transforms):
     return val_dataloader
 
 
-def train(model, server, train_clients, val_dataloader):
+def train(model, server, train_clients, val_dataloader, logger):
     for r in range(N_ROUND):
-        print(f"ROUND {r + 1}/{N_ROUND}: Training {CLIENT_PER_ROUND} Clients...")
+        logger.info(f"ROUND {r + 1}/{N_ROUND}: Training {CLIENT_PER_ROUND} Clients...")
         server.select_clients(r, train_clients, num_clients=CLIENT_PER_ROUND)
         server.train_round()
         server.update_model()
         miou = compute_moiu(net=server.model, val_dataloader=val_dataloader)
         wandb.log({"server/miou": miou})
-        print(f"Validation MIoU: {miou}")
+        logger.info(f"Validation MIoU: {miou}")
         if r % CHECKPOINTS == 0:
-            print(f"Saving the model")
+            logger.info(f"Saving the model")
             torch.save(
                 model.state_dict(),
                 ROOT_DIR
@@ -128,52 +128,52 @@ def create_val_dataloader(transforms):
     return val_dataloader
 
 
-def validation(model, val_dataloader):
+def validation(model, val_dataloader, logger):
     miou = compute_moiu(net=model, val_dataloader=val_dataloader)
-    print("Validation MIoU: {}".format(miou))
+    logger.info("Validation MIoU: {}".format(miou))
     wandb.log({"val/miou": miou})
     wandb.finish()
-    print("validation plot : ")
+    logger.info("validation plot : ")
     validation_plot(net=model, val_dataloader=val_dataloader, n_image=20)
     torch.cuda.empty_cache()
 
 
-def main(args):
-    print("centralized baseline main")
+def main(args, logger):
+    logger.info("centralized baseline main")
     random.seed(SEED)
     np.random.seed(SEED)
-    print("setting up transforms ... ")
+    logger.info("setting up transforms ... ")
     transforms = setup_transform()
 
-    print("loading the model ... ")
+    logger.info("loading the model ... ")
     model = BiSeNetV2(NUM_CLASSES, output_aux=False, pretrained=True)
     model = model.to(DEVICE)
-    # print("generating the datasets")
+    # logger.info("generating the datasets")
     # generate_splits()
-    print("setting up the clients ... ")
+    logger.info("setting up the clients ... ")
     train_clients = setup_clients(
         n_clients=TOT_CLIENTS, model=model, transforms=transforms
     )
     round_val_dataloader = create_round_val_dataloader(transforms)
 
-    print("setting up the server ... ")
+    logger.info("setting up the server ... ")
     server = Server(model, lr=LR, momentum=MOMENTUM)
 
-    print("setting up wandb ... ")
+    logger.info("setting up wandb ... ")
     wb_setup(step=3)
 
-    print("start the training loop")
-    train(model, server, train_clients, round_val_dataloader)
+    logger.info("start the training loop")
+    train(model, server, train_clients, round_val_dataloader, logger)
 
-    print("training completed")
-    print("saving the model")
+    logger.info("training completed")
+    logger.info("saving the model")
     torch.save(
         model.state_dict(),
         ROOT_DIR + "models/STEP3/" + f"model_P{PARTITION}_S{SPLIT}.pth",
     )
 
-    print("creating validation dataloader")
+    logger.info("creating validation dataloader")
     val_dataloader = create_val_dataloader(transforms)
 
-    print("Validation step")
-    validation(server.model, val_dataloader)
+    logger.info("Validation step")
+    validation(server.model, val_dataloader, logger)

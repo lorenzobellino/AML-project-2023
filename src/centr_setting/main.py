@@ -20,7 +20,7 @@ from utils.utils import *
 from dataset.cityscapes import Cityscapes
 
 
-def train(model, dataloader):
+def train(model, dataloader, logger):
     criterion = nn.CrossEntropyLoss(ignore_index=255)
     parameters_to_optimize = model.parameters()
     optimizer = optim.SGD(
@@ -37,7 +37,7 @@ def train(model, dataloader):
     current_step = 0
     # Start iterating over the epochs
     for epoch in range(NUM_EPOCHS):
-        print("Starting epoch {}/{}".format(epoch + 1, NUM_EPOCHS))
+        logger.info("Starting epoch {}/{}".format(epoch + 1, NUM_EPOCHS))
         epochs.append(epoch + 1)
 
         # Iterate over the dataset
@@ -52,7 +52,7 @@ def train(model, dataloader):
 
             # Log loss
             if current_step % LOG_FREQUENCY == 0:
-                print("Step {}, Loss {}".format(current_step, loss.item()))
+                logger.info("Step {}, Loss {}".format(current_step, loss.item()))
                 wandb.log({"train/loss": loss})
             # Compute gradients for each layer and update weights
             loss.backward()
@@ -115,46 +115,46 @@ def create_val_dataloader(transforms):
     return val_dataloader
 
 
-def validation(model, dataloader):
+def validation(model, dataloader, logger):
     miou = compute_moiu(net=model, val_dataloader=dataloader)
-    print("Validation MIoU: {}".format(miou))
+    logger.info("Validation MIoU: {}".format(miou))
     wandb.log({"val/miou": miou})
     wandb.finish()
-    print("validation plot : ")
+    logger.info("validation plot : ")
     validation_plot(net=model, val_dataloader=dataloader, n_image=20)
     torch.cuda.empty_cache()
 
 
-def save_model(model):
+def save_model(model, logger):
     name = f"step2_{PARTITION}_model.pth"
     if not os.path.exists(ROOT_DIR + "models/STEP2/"):
-        print("creating models directory")
+        logger.info("creating models directory")
         os.makedirs(ROOT_DIR + "models/STEP2/")
     torch.save(model.state_dict(), ROOT_DIR + "models/STEP2/" + name)
 
 
-def main(args):
-    print("centralized baseline main")
+def main(args, logger):
+    logger.info("centralized baseline main")
     random.seed(SEED)
     np.random.seed(SEED)
-    print("setting up transforms ... ")
+    logger.info("setting up transforms ... ")
     transforms = setup_transform()
 
-    print("choosing dataset and creating dataloader ... ")
+    logger.info("choosing dataset and creating dataloader ... ")
     train_dataloader = create_train_dataloader(transforms)
 
-    print("setup for wandb")
+    logger.info("setup for wandb")
     wb_setup(step=2)
 
-    print("start the training loop")
+    logger.info("start the training loop")
     model = BiSeNetV2(NUM_CLASSES, output_aux=False, pretrained=True)
 
-    train(model, train_dataloader)
+    train(model, train_dataloader, logger)
 
-    print("saving model")
-    save_model(model)
+    logger.info("saving model")
+    save_model(model, logger)
 
-    print("creating validation dataloader")
+    logger.info("creating validation dataloader")
     val_dataloader = create_val_dataloader(transforms)
 
-    validation(model, val_dataloader)
+    validation(model, val_dataloader, logger)

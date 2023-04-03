@@ -1,5 +1,6 @@
 import time
 import importlib
+import logging
 import argparse
 from argparse import RawTextHelpFormatter
 
@@ -7,29 +8,30 @@ from argparse import RawTextHelpFormatter
 
 # from utils import parse_args, modify_command_options
 
+logger = logging.getLogger("FED_SS")
 
-def run_experiment(args):
+
+def run_experiment(args, logger):
     if args.step == 1:
-        print("Generating the Dataset for cityscapes")
+        logger.info("Generating the Dataset for cityscapes")
         main_module = "dataset_generation.main"
         main = getattr(importlib.import_module(main_module), "main")
-        main(args)
+        main(args, logger)
     elif args.step == 2:
-        print("Centralized baseline")
+        logger.info("Centralized baseline")
         main_module = "centr_setting.main"
         main = getattr(importlib.import_module(main_module), "main")
-        main(args)
+        main(args, logger)
     elif args.step == 3:
-        print("Federated + Semantic Segmentation")
+        logger.info("Federated + Semantic Segmentation")
         main_module = "fed_setting.main"
         main = getattr(importlib.import_module(main_module), "main")
-        main(args)
+        main(args, logger)
     else:
         raise NotImplementedError
 
 
 if __name__ == "__main__":
-    start = time.time()
     parser = argparse.ArgumentParser(
         prog="Federated Learning with semantic segmentation",
         description="Based on the choosen step the program will perform different actions.",
@@ -40,14 +42,28 @@ if __name__ == "__main__":
         "-s",
         "--step",
         type=int,
-        help="Step to run:\n\t1: Generating the Dataset for cityscapes\n\t2: Centralized baseline\n\t3: Federated + Semantic Segmentation",
+        help="Step to run:\n"
+        + "\t1: Generating the Dataset for cityscapes\n"
+        + "\t2: Centralized baseline\n"
+        + "\t3: Federated + Semantic Segmentation\n"
+        + "\t4: Moving towards FFreDA, Pre-training phase\n",
         required=True,
     )
-
+    parser.add_argument("-d", "--debug", action="store_true", help="Enable debug mode")
     args = parser.parse_args()
 
-    print(f"Step {args.step} selected")
-    run_experiment(args)
+    args = parser.parse_args()
+    logger.setLevel(level=logging.DEBUG if args.debug else logging.INFO)
+    ch = logging.StreamHandler()
+    ch.setLevel(level=logging.DEBUG if args.debug else logging.INFO)
+    formatter = logging.Formatter("%(levelname)s - %(message)s")
+    ch.setFormatter(formatter)
+    logger.addHandler(ch)
+
+    start = time.time()
+
+    logger.info(f"Step {args.step} selected")
+    run_experiment(args, logger)
 
     end = time.time()
-    print(f"Elapsed time: {round(end - start, 2)}")
+    logger.info(f"Elapsed time: {round(end - start, 2)}")
