@@ -159,6 +159,9 @@ def main(args):
     print("setting up the server ... ")
     server = Server(model, lr=LR, momentum=MOMENTUM)
 
+    print("setting up wandb ... ")
+    wb_setup(step=3)
+
     print("start the training loop")
     train(model, server, train_clients, round_val_dataloader)
 
