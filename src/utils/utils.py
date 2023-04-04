@@ -52,6 +52,8 @@ def setup_transform():
     if RESIZE is not None:
         transformers.append(T.Resize(RESIZE))
 
+    transformers.append(T.ToTensor())
+
     transforms = T.Compose(transformers)
 
     return transforms

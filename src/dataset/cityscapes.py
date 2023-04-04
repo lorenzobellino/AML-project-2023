@@ -6,6 +6,7 @@ import torch.utils.data as torch_data
 
 from torchvision.io import read_image
 from torch import from_numpy
+from PIL import Image
 
 
 class Cityscapes(torch_data.Dataset):
@@ -49,10 +50,6 @@ class Cityscapes(torch_data.Dataset):
             self.paths_images = [l[0] for l in dict_data[str(id_client)]]
             self.paths_tagets = [l[1] for l in dict_data[str(id_client)]]
 
-            self.len = len(self.paths_images)
-            self.transform = transform
-            self.return_unprocessed_image = False
-
         else:
             with open(os.path.join(root, filename), "r") as f:
                 lines = f.readlines()
@@ -61,8 +58,12 @@ class Cityscapes(torch_data.Dataset):
             self.paths_images = [l.strip().split("@")[0] for l in lines]
             self.paths_tagets = [l.strip().split("@")[1] for l in lines]
 
-            self.len = len(self.paths_images)
-            self.transform = transform
+            # self.len = len(self.paths_images)
+            # self.transform = transform
+
+        self.len = len(self.paths_images)
+        self.transform = transform
+        self.return_unprocessed_image = False
 
         if cl19:
             classes = eval_classes
@@ -80,13 +81,17 @@ class Cityscapes(torch_data.Dataset):
         """
 
         # # using read_image
-        img = read_image(os.path.join(self.root, "images", self.paths_images[index]))
-        target = read_image(os.path.join(self.root, "labels", self.paths_tagets[index]))
+        # img = read_image(os.path.join(self.root, "images", self.paths_images[index]))
+        # target = read_image(os.path.join(self.root, "labels", self.paths_tagets[index]))
 
-        # if self.return_unprocessed_image:
-        #     transform_PIL = T.ToPILImage()
-        #     img = transform_PIL(img)
-        #     return img
+        # # using PIL
+        img = Image.open(os.path.join(self.root, "images", self.paths_images[index]))
+        target = Image.open(os.path.join(self.root, "labels", self.paths_tagets[index]))
+
+        if self.return_unprocessed_image:
+            # transform_PIL = T.ToPILImage()
+            # img = transform_PIL(img)
+            return img
 
         if self.transform:
             img, target = self.transform(img, target)
@@ -97,8 +102,6 @@ class Cityscapes(torch_data.Dataset):
         return img, target  # output: Tensor[image_channels, image_height, image_width]
 
         # # using Image.open + np.array
-        # img = Image.open(os.path.join(self.root,"images",self.paths_images[index]))
-        # target = Image.open(os.path.join(self.root,"labels",self.paths_tagets[index]))
 
         # return np.array(img), np.array(target) # output: Tensor[image_height, image_width, image_channels]
 
