@@ -52,6 +52,8 @@ def setup_transform():
     if RESIZE is not None:
         transformers.append(T.Resize(RESIZE))
 
+    transformers.append(T.ToTensor())
+
     transforms = T.Compose(transformers)
 
     return transforms
@@ -125,17 +127,20 @@ def validation_plot(net, val_dataloader, n_image):
 
         figure = plt.figure(figsize=(10, 20))
         figure.add_subplot(rows, columns, 1)
+        # plt.imshow(imgs[0].permute((1, 2, 0)).squeeze())
         plt.imshow(imgs[0].permute((1, 2, 0)).squeeze())
         plt.axis("off")
         plt.title("Image")
 
         figure.add_subplot(rows, columns, 2)
-        plt.imshow(decode_segmap(targets[0].permute((1, 2, 0)).squeeze()))
+        # plt.imshow(decode_segmap(targets[0].permute((1, 2, 0)).squeeze()))
+        plt.imshow(decode_segmap(targets[0]))
         plt.axis("off")
         plt.title("Groundtruth")
 
         figure.add_subplot(rows, columns, 3)
-        plt.imshow(decode_segmap(preds[0].squeeze()))
+        # plt.imshow(decode_segmap(preds[0].squeeze()))
+        plt.imshow(decode_segmap(preds[0]))
         plt.axis("off")
         plt.title("Prediction")
         plt.show()

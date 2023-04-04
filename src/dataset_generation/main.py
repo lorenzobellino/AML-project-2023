@@ -8,10 +8,7 @@ from config.baseline import *
 from config.federated import *
 
 
-def generate_splits():
-    # if "train_A.txt" not in os.listdir(ROOT_DIR) or "test_A.txt" not in os.listdir(
-    #     ROOT_DIR
-    # ):
+def generate_splits_step1(logger):
     IMAGES_FINAL = "leftImg8bit"
     TARGET_FINAL = "gtFine_labelIds"
 
@@ -69,6 +66,8 @@ def generate_splits():
         for img in train_img:
             f.write(str(img[0]) + "@" + img[1] + "\n")
 
+
+def generate_splits_step3(logger):
     if PARTITION == "A":
         # train A
         with open(os.path.join(ROOT_DIR, "data/Cityscapes/train_A.txt"), "r") as f:
@@ -155,8 +154,11 @@ def generate_splits():
             json.dump(client_dict, outfile, indent=4)
 
 
-def main(args):
-    print("generating dataset main")
+def main(args, logger):
+    logger.info("generating dataset main")
     random.seed(SEED)
-    generate_splits()
-    print("finished generating the splits")
+    logger.info("generating split for step 1")
+    generate_splits_step1(logger)
+    logger.info("generating split for step 3")
+    generate_splits_step3(logger)
+    logger.info("finished generating the splits")

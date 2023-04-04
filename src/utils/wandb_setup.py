@@ -1,6 +1,7 @@
 import wandb
 from config.baseline import *
 from config.transform import *
+from config.federated import *
 
 
 def setup(step):
@@ -29,7 +30,19 @@ def setup(step):
         }
         name = f"Step_2_{PARTITION}_lr{LR}_bs{BATCH_SIZE}_e{NUM_EPOCHS}"
     elif step == 3:
-        pass
+        config = {
+            "batch_size": BATCH_SIZE,
+            "lr": LR,
+            "momentum": MOMENTUM,
+            "num_epochs": NUM_EPOCHS,
+            "n_client": CLIENT_PER_ROUND,
+            "round": N_ROUND,
+            "tot_client": TOT_CLIENTS,
+        }
+        name = (
+            f"Step_3_{PARTITION}_split{SPLIT}_rounds{N_ROUND}_clients{CLIENT_PER_ROUND}"
+        )
+
     wandb.init(
         project=f"STEP{step}",
         # entity="lor-bellino",
