@@ -15,7 +15,7 @@ from config.baseline import *
 from config.transform import *
 from config.federated import *
 from utils.wandb_setup import setup as wb_setup
-from utils.utils import setup_transform, compute_moiu, validation_plot
+from utils.utils import setup_transform, compute_miou, validation_plot
 from dataset.cityscapes import Cityscapes
 from bisenetV2.bisenetv2 import BiSeNetV2
 from client import Client
@@ -89,7 +89,7 @@ def train(model, server, train_clients, val_dataloader, logger):
         server.select_clients(r, train_clients, num_clients=CLIENT_PER_ROUND)
         server.train_round()
         server.update_model()
-        miou = compute_moiu(net=server.model, val_dataloader=val_dataloader)
+        miou = compute_miou(net=server.model, val_dataloader=val_dataloader)
         wandb.log({"server/miou": miou})
         logger.info(f"Validation MIoU: {miou}")
         if r % CHECKPOINTS == 0:
@@ -129,7 +129,7 @@ def create_val_dataloader(transforms):
 
 
 def validation(model, val_dataloader, logger):
-    miou = compute_moiu(net=model, val_dataloader=val_dataloader)
+    miou = compute_miou(net=model, val_dataloader=val_dataloader)
     logger.info("Validation MIoU: {}".format(miou))
     wandb.log({"val/miou": miou})
     wandb.finish()
@@ -145,9 +145,16 @@ def main(args, logger):
     logger.info("setting up transforms ... ")
     transforms = setup_transform()
 
-    logger.info("loading the model ... ")
-    model = BiSeNetV2(NUM_CLASSES, output_aux=False, pretrained=True)
+    if args.load is not None:
+        logger.info("loading the model ... ")
+        model = BiSeNetV2(NUM_CLASSES, output_aux=False, pretrained=False)
+        model.load_state_dict(torch.load("models/" + args.load))
+        model.eval()
+    else:
+        logger.info("loading the model ... ")
+        model = BiSeNetV2(NUM_CLASSES, output_aux=False, pretrained=True)
     model = model.to(DEVICE)
+
     # logger.info("generating the datasets")
     # generate_splits()
     logger.info("setting up the clients ... ")

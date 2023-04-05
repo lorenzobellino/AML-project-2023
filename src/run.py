@@ -27,6 +27,11 @@ def run_experiment(args, logger):
         main_module = "fed_setting.main"
         main = getattr(importlib.import_module(main_module), "main")
         main(args, logger)
+    elif args.step == 4:
+        logger.info("Moving towards FFreDA")
+        main_module = "ffreda_setting.main"
+        main = getattr(importlib.import_module(main_module), "main")
+        main(args, logger)
     else:
         raise NotImplementedError
 
@@ -46,11 +51,22 @@ if __name__ == "__main__":
         + "\t1: Generating the Dataset for cityscapes\n"
         + "\t2: Centralized baseline\n"
         + "\t3: Federated + Semantic Segmentation\n"
-        + "\t4: Moving towards FFreDA, Pre-training phase\n",
+        + "\t4: Moving towards FFreDA:\n\t\t-p Pre-training phase\n\t\t-FDA FDA Style application",
         required=True,
     )
+    parser.add_argument(
+        "-p", "--pretrain", action="store_true", help="Step 4 Pre-training phase"
+    )
+    parser.add_argument(
+        "-FDA", action="store_true", help="Step 4 FDA Style application"
+    )
+    parser.add_argument(
+        "-l",
+        "--load",
+        type=argparse.FileType("r"),
+        help="Load the model from previous run",
+    )
     parser.add_argument("-d", "--debug", action="store_true", help="Enable debug mode")
-    args = parser.parse_args()
 
     args = parser.parse_args()
     logger.setLevel(level=logging.DEBUG if args.debug else logging.INFO)

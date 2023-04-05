@@ -116,7 +116,7 @@ def create_val_dataloader(transforms):
 
 
 def validation(model, dataloader, logger):
-    miou = compute_moiu(net=model, val_dataloader=dataloader)
+    miou = compute_miou(net=model, val_dataloader=dataloader)
     logger.info("Validation MIoU: {}".format(miou))
     wandb.log({"val/miou": miou})
     wandb.finish()
@@ -146,9 +146,15 @@ def main(args, logger):
     logger.info("setup for wandb")
     wb_setup(step=2)
 
-    logger.info("start the training loop")
-    model = BiSeNetV2(NUM_CLASSES, output_aux=False, pretrained=True)
+    if args.load is not None:
+        logger.info("loading model")
+        model = BiSeNetV2(NUM_CLASSES, output_aux=False, pretrained=False)
+        model.load_state_dict(torch.load("models/" + args.load))
+    else:
+        logger.info("creating model ... ")
+        model = BiSeNetV2(NUM_CLASSES, output_aux=False, pretrained=True)
 
+    logger.info("start the training loop")
     train(model, train_dataloader, logger)
 
     logger.info("saving model")

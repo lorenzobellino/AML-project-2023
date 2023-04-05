@@ -17,27 +17,28 @@ class Cityscapes(torch_data.Dataset):
     """
 
     def __init__(self, root, transform=None, cl19=False, filename=None, id_client=None):
-        eval_classes = [
-            7,
-            8,
-            11,
-            12,
-            13,
-            17,
-            19,
-            20,
-            21,
-            22,
-            23,
-            24,
-            25,
-            26,
-            27,
-            28,
-            31,
-            32,
-            33,
-        ]
+        labels2train = {
+            7: 0,
+            8: 1,
+            11: 2,
+            12: 3,
+            13: 4,
+            17: 5,
+            19: 6,
+            20: 7,
+            21: 8,
+            22: 9,
+            23: 10,
+            24: 11,
+            25: 12,
+            26: 13,
+            27: 14,
+            28: 15,
+            31: 16,
+            32: 17,
+            33: 18,
+        }
+
         self.root = root
 
         if filename is None:
@@ -66,7 +67,7 @@ class Cityscapes(torch_data.Dataset):
         self.return_unprocessed_image = False
 
         if cl19:
-            classes = eval_classes
+            classes = labels2train.keys()
             mapping = np.zeros((256,), dtype=np.int64) + 255
             for i, cl in enumerate(classes):
                 mapping[cl] = i
@@ -107,3 +108,9 @@ class Cityscapes(torch_data.Dataset):
 
     def __len__(self):
         return self.len
+
+    # def __map_labels(self):
+    #     mapping = np.zeros((256,), dtype=np.int64) + 255
+    #     for k, v in self.labels2train.items():
+    #         mapping[k] = v
+    #     return lambda x: from_numpy(mapping[x])
