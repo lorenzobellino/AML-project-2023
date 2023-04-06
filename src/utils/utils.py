@@ -78,7 +78,7 @@ def decode_segmap(temp):
     return rgb
 
 
-def compute_moiu(net, val_dataloader):
+def compute_miou(net, val_dataloader):
     net = net.to(DEVICE)
     net.train(False)  # Set Network to evaluation mode
     jaccard = MulticlassJaccardIndex(num_classes=NUM_CLASSES, ignore_index=255).to(
