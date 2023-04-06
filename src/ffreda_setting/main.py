@@ -18,7 +18,8 @@ from config.ffreda import *
 from utils.wandb_setup import setup as wb_setup
 from utils.utils import *
 from bisenetV2.bisenetv2 import BiSeNetV2
-from styleaugment import StyleAugment
+
+# from .styleaugment import StyleAugment
 
 
 def train(model, dataloader, miou_dataloader, logger):
@@ -103,7 +104,7 @@ def create_miou_dataloader(transforms):
         root=CTSC_ROOT,
         transform=transforms,
         cl19=True,
-        filename="uniformA.txt",
+        filename="uniformA.json",
         id_client=0,
     )
     miou_dataloader = DataLoader(
@@ -207,6 +208,7 @@ def main(args, logger):
     logger.info("ffreda setting main")
     random.seed(SEED)
     np.random.seed(SEED)
+    torch.manual_seed(SEED)
 
     if args.pretrain:
         logger.info("pre-training phase")
@@ -220,7 +222,7 @@ def main(args, logger):
         miou_dataloader = create_miou_dataloader(transforms)
 
         logger.info("setup for wandb")
-        wb_setup(step=4)
+        wb_setup(step=4, args=args)
 
         if args.load is not None:
             logger.info("loading model")
@@ -279,7 +281,7 @@ def main(args, logger):
             os.makedirs(CKPT_DIR)
 
         logger.info("setup for wandb")
-        wb_setup(step=4)
+        wb_setup(step=4, args=args)
 
         logger.info("start the training loop")
         train_FDA(train_dataloader, miou_dataloader, logger, args)
