@@ -67,7 +67,17 @@ def setup(step, args):
             }
             name = f"Step_4_pretrain_lr{LR}_bs{BATCH_SIZE}_e{NUM_EPOCHS}"
         else:
-            raise NotImplementedError
+            config = {
+                "batch_size": BATCH_SIZE,
+                "lr": LR,
+                "momentum": MOMENTUM,
+                "num_epochs": NUM_EPOCHS,
+                "n_client": CLIENT_PER_ROUND,
+                "round": N_ROUND,
+                "tot_client": TOT_CLIENTS,
+            }
+            name = f"Step_4_FDA_P{PARTITION}"
+            # raise NotImplementedError
     else:
         raise NotImplementedError
     wandb.init(

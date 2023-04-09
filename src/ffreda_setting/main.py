@@ -21,6 +21,8 @@ from bisenetV2.bisenetv2 import BiSeNetV2
 
 # from .styleaugment import StyleAugment
 
+from .styleaugment import StyleAugment
+
 
 def train(model, dataloader, miou_dataloader, logger):
     criterion = nn.CrossEntropyLoss(ignore_index=255)
@@ -78,6 +80,7 @@ def train(model, dataloader, miou_dataloader, logger):
 
 
 def validation(model, dataloader, logger):
+    torch.cuda.empty_cache()
     miou = compute_miou(net=model, val_dataloader=dataloader)
     logger.info("Validation MIoU: {}".format(miou))
     wandb.log({"val/miou": miou})
@@ -126,7 +129,7 @@ def create_val_dataloader(transforms):
     )
     val_dataloader = DataLoader(
         val_dataset,
-        batch_size=BATCH_SIZE,
+        batch_size=BATCH_SIZE - 2,
         shuffle=False,
         num_workers=4,
         drop_last=True,
@@ -134,7 +137,7 @@ def create_val_dataloader(transforms):
     return val_dataloader
 
 
-def train_FDA(model, dataloader, miou_dataloader, logger, args):
+def train_FDA(dataloader, miou_dataloader, logger, args):
     logger.info("crearting the model")
     model = BiSeNetV2(NUM_CLASSES, output_aux=False, pretrained=True)
     criterion = nn.CrossEntropyLoss()
@@ -143,13 +146,17 @@ def train_FDA(model, dataloader, miou_dataloader, logger, args):
         parameters_to_optimize, lr=LR, momentum=MOMENTUM, weight_decay=WEIGHT_DECAY
     )
 
+    ckpt_epoch = 0
+    current_step = 0
+    ckpt_miou = 0
+
     if args.load is not None:
         logger.info("loading checkpoint")
         checkpoint = torch.load(os.path.join(CKPT_DIR, args.load))
         model.load_state_dict(checkpoint["model_state_dict"])
         optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
         ckpt_epoch = checkpoint["epoch"]
-        ckpt_loss = checkpoint["loss"]
+        # ckpt_loss = checkpoint["loss"]
         ckpt_miou = checkpoint["miou"]
 
     model = model.to(DEVICE)
@@ -209,6 +216,7 @@ def main(args, logger):
     random.seed(SEED)
     np.random.seed(SEED)
     torch.manual_seed(SEED)
+    torch.cuda.manual_seed(SEED)
 
     if args.pretrain:
         logger.info("pre-training phase")
@@ -256,7 +264,7 @@ def main(args, logger):
                 root=CTSC_ROOT,
                 transform=transforms,
                 cl19=True,
-                filename="uniformA.txt",
+                filename="uniformA.json",
                 id_client=c,
             )
             SA.add_style(client_dataset)

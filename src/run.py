@@ -32,6 +32,11 @@ def run_experiment(args, logger):
         main_module = "ffreda_setting.main"
         main = getattr(importlib.import_module(main_module), "main")
         main(args, logger)
+    elif args.step == 5:
+        logger.info("Federated Self-Training with pseudo-labels")
+        main_module = "pseudo_labels.main"
+        main = getattr(importlib.import_module(main_module), "main")
+        main(args, logger)
     else:
         raise NotImplementedError
 
@@ -78,7 +83,6 @@ if __name__ == "__main__":
 
     start = time.time()
 
-    logger.info(f"Step {args.step} selected")
     run_experiment(args, logger)
 
     end = time.time()
