@@ -15,25 +15,25 @@ def run_experiment(args, logger):
     if args.step == 1:
         logger.info("Generating the Dataset for cityscapes")
         main_module = "dataset_generation.main"
-        main = getattr(importlib.import_module(main_module), "main")
-        main(args, logger)
     elif args.step == 2:
-        logger.info("Centralized baseline")
-        main_module = "centr_setting.main"
-        main = getattr(importlib.import_module(main_module), "main")
-        main(args, logger)
+        logger.info("Centralized baseline of Cityscapes")
+        main_module = "centralized.main"
     elif args.step == 3:
         logger.info("Federated + Semantic Segmentation")
-        main_module = "fed_setting.main"
-        main = getattr(importlib.import_module(main_module), "main")
-        main(args, logger)
+        main_module = "federated.main"
+
     elif args.step == 4:
-        logger.info("Moving towards FFreDA")
-        main_module = "ffreda_setting.main"
-        main = getattr(importlib.import_module(main_module), "main")
-        main(args, logger)
+        logger.info("Domain Adaptation")
+        main_module = "centralized.main"
+
+    elif args.step == 5:
+        logger.info("Pseudo Labeling")
+        main_module = "federated.main"
     else:
         raise NotImplementedError
+
+    main = getattr(importlib.import_module(main_module), "main")
+    main(args, logger)
 
 
 if __name__ == "__main__":
@@ -51,19 +51,23 @@ if __name__ == "__main__":
         + "\t1: Generating the Dataset for cityscapes\n"
         + "\t2: Centralized baseline\n"
         + "\t3: Federated + Semantic Segmentation\n"
-        + "\t4: Moving towards FFreDA:\n\t\t-p Pre-training phase\n\t\t-FDA FDA Style application",
+        + "\t4: Domain Adaptaion:\n",
         required=True,
     )
+    # parser.add_argument(
+    #     "-p", "--pretrain", action="store_true", help="Step 4 Pre-training phase"
+    # )
     parser.add_argument(
-        "-p", "--pretrain", action="store_true", help="Step 4 Pre-training phase"
-    )
-    parser.add_argument(
-        "-FDA", action="store_true", help="Step 4 FDA Style application"
+        "-dts",
+        "--dataset",
+        type=str,
+        help="Dataset to use: GTA (GTA5) or CTSC (Cityscapes)",
+        required=False,
     )
     parser.add_argument(
         "-l",
         "--load",
-        type=argparse.FileType("r"),
+        type=str,
         help="Load the model from previous run",
     )
     parser.add_argument("-d", "--debug", action="store_true", help="Enable debug mode")
@@ -78,7 +82,6 @@ if __name__ == "__main__":
 
     start = time.time()
 
-    logger.info(f"Step {args.step} selected")
     run_experiment(args, logger)
 
     end = time.time()

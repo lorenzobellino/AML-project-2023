@@ -1,12 +1,18 @@
 import torch
+import numpy as np
+import os
+import wandb
 import matplotlib.pyplot as plt
 
 from torchmetrics.classification import MulticlassJaccardIndex
 
 import utils.transform as T
 
-from config.transform import *
-from config.baseline import *
+from config.config_transforms import *
+from config.config_options import *
+
+from config.config_options import DEVICE, NUM_CLASSES
+
 
 colors = [
     [128, 64, 128],
@@ -105,43 +111,130 @@ def compute_miou(net, val_dataloader):
     return metric
 
 
-def validation_plot(net, val_dataloader, n_image):
+def validation_plot(net, val_dataloader, n_images):
     net = net.to(DEVICE)
     net.train(False)
     rows = 1
     columns = 3
-    for b, (imgs, targets) in enumerate(val_dataloader):
-        if b == n_image:
-            break
+    n = 0
+    if not os.path.exists("./results"):
+        os.makedirs("./results")
+    for imgs, targets in val_dataloader:
         # i = random.randint(BATCH_SIZE)
+        if n >= n_images:
+            break
         imgsfloat = imgs.to(DEVICE, dtype=torch.float32)
         outputs = net(imgsfloat)
         _, preds = torch.max(outputs.data, 1)
         # Added in order to use the decode_segmap function
         preds = preds.cpu()  # or equally preds = preds.to('cpu')
 
-        # pick the first image of each batch
-        print(imgs[0].shape, targets[0].shape)
-        print("img:", imgs[0].squeeze().shape, " target:", targets[0].squeeze().shape)
-        print("pred:", preds.shape)
+        for i in range(len(imgs)):
+            if n >= n_images:
+                break
+            # pick the first image of each batch
+            # print(imgs[i].shape, targets[i].shape)
+            # print(
+            #     "img:", imgs[i].squeeze().shape, " target:", targets[i].squeeze().shape
+            # )
+            # print("pred:", preds.shape)
 
-        figure = plt.figure(figsize=(10, 20))
-        figure.add_subplot(rows, columns, 1)
-        # plt.imshow(imgs[0].permute((1, 2, 0)).squeeze())
-        plt.imshow(imgs[0].permute((1, 2, 0)).squeeze())
-        plt.axis("off")
-        plt.title("Image")
+            figure = plt.figure(figsize=(10, 10))
+            figure.add_subplot(rows, columns, 1)
+            # plt.imshow(imgs[0].permute((1, 2, 0)).squeeze())
+            plt.imshow(imgs[i].permute((1, 2, 0)).squeeze())
+            plt.axis("off")
+            plt.title("Image")
 
-        figure.add_subplot(rows, columns, 2)
-        # plt.imshow(decode_segmap(targets[0].permute((1, 2, 0)).squeeze()))
-        plt.imshow(decode_segmap(targets[0]))
-        plt.axis("off")
-        plt.title("Groundtruth")
+            figure.add_subplot(rows, columns, 2)
+            # plt.imshow(decode_segmap(targets[0].permute((1, 2, 0)).squeeze()))
+            plt.imshow(decode_segmap(targets[i]))
+            plt.axis("off")
+            plt.title("Groundtruth")
 
-        figure.add_subplot(rows, columns, 3)
-        # plt.imshow(decode_segmap(preds[0].squeeze()))
-        plt.imshow(decode_segmap(preds[0]))
-        plt.axis("off")
-        plt.title("Prediction")
-        plt.show()
+            figure.add_subplot(rows, columns, 3)
+            # plt.imshow(decode_segmap(preds[0].squeeze()))
+            plt.imshow(decode_segmap(preds[i]))
+            plt.axis("off")
+            plt.title("Prediction")
+            plt.savefig(f"./results/validation_{n}.png", transparent=True)
+            n += 1
     return
+
+
+def setup_wandb(args, logger):
+    wandb.login()
+    transformer_dictionary = {
+        "random-horizontal-flip": RANDOM_HORIZONTAL_FLIP,
+        "color-jitter": COLOR_JITTER,
+        "random-rotation": RANDOM_ROTATION,
+        "random-crop": RANDOM_CROP,
+        "random-vertical-flip": RANDOM_VERTICAL_FLIP,
+        "central-crop": CENTRAL_CROP,
+        "random-resized-crop": RANDOM_RESIZE_CROP,
+        "resize": RESIZE,
+    }
+
+    if args.step == 2:
+        config = {
+            "batch_size": BATCH_SIZE,
+            "lr": LR,
+            "num_epochs": NUM_EPOCHS,
+            "transformers": transformer_dictionary,
+        }
+        name = f"Step_2_{ PARTITION}_lr{ LR}_bs{ BATCH_SIZE}_e{ NUM_EPOCHS}"
+        project = "STEP2"
+    elif args.step == 3:
+        config = {
+            "batch_size": BATCH_SIZE,
+            "lr": LR,
+            "momentum": MOMENTUM,
+            "num_epochs": NUM_EPOCHS,
+            "n_client": CLIENT_PER_ROUND,
+            "round": N_ROUND,
+            "tot_client": TOT_CLIENTS,
+        }
+        name = f"Step_3_{ PARTITION}_S{ SPLIT}_R{ N_ROUND}_c{ CLIENT_PER_ROUND}"
+        project = "STEP3"
+    elif args.step == 4:
+        config = {
+            "batch_size": BATCH_SIZE,
+            "lr": LR,
+            "num_epochs": NUM_EPOCHS,
+            "weight_decay": WEIGHT_DECAY,
+            "momentum": MOMENTUM,
+            # "step_size": STEP_SIZE,
+            "transformers": transformer_dictionary,
+            "FDA": FDA,
+            "num_styles": N_STYLE,
+            "beta_window_size": BETA_WINDOW_SIZE,
+        }
+
+        name = f"step4{'_FDA' if  FDA else ''}_{ PARTITION}_S{ SPLIT}_lr{ LR}_bs{ BATCH_SIZE}_e{ NUM_EPOCHS}"
+
+        project = f"STEP{'4.4' if  FDA else '4.2' }"
+    elif args.step == 5:
+        config = {
+            "batch_size": BATCH_SIZE,
+            "lr": LR,
+            "momentum": MOMENTUM,
+            "weight_decay": WEIGHT_DECAY,
+            "num_epochs": NUM_EPOCHS,
+            "n_client": CLIENT_PER_ROUND,
+            "round": N_ROUND,
+            "tot_client": TOT_CLIENTS,
+            "transformers": transformer_dictionary,
+        }
+
+        name = f"Step_5{'_FDA' if  FDA else ''}_T{ T_ROUND}_{ PARTITION}_S{ SPLIT}_R{ N_ROUND}_c{ CLIENT_PER_ROUND}"
+        project = "STEP5"
+
+    else:
+        raise NotImplementedError
+
+    wandb.init(
+        project=project,
+        # entity="lor-bellino",
+        config=config,
+        name=name,
+    )
