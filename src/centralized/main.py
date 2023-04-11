@@ -123,7 +123,7 @@ def training_loop(args, logger, model, train_dataloader, miou_dataloader):
                         "loss": loss,
                         "miou": miou,
                     },
-                    CKPT_PATH
+                    CKPT_DIR
                     + f"step{args.step}_{PARTITION}_S{SPLIT}{'_FDA' if FDA else ''}_{miou:.2f}.pth",
                 )
     return best_miou
@@ -201,7 +201,7 @@ def main(args, logger):
         model.load_state_dict(torch.load(f"./models/model_step{args.step}.pth"))
     else:
         ckpt = torch.load(
-            CKPT_PATH
+            CKPT_DIR
             + f"step4_{PARTITION}_S{SPLIT}{'_FDA' if FDA else ''}_{miou:.2f}.pth"
         )
         model.load_state_dict(ckpt["model_state_dict"])
