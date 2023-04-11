@@ -3,18 +3,16 @@ import os
 import math
 import json
 
-from bisenetV2.bisenetv2 import BiSeNetV2
-from config.baseline import *
-from config.federated import *
+from config.config_options import *
 
 
 def generate_splits_step1(logger):
     IMAGES_FINAL = "leftImg8bit"
     TARGET_FINAL = "gtFine_labelIds"
 
-    with open(os.path.join(ROOT_DIR, "data/Cityscapes/train.txt"), "r") as ft:
+    with open(os.path.join(CTSC_ROOT, "train.txt"), "r") as ft:
         lines_train = ft.readlines()
-    with open(os.path.join(ROOT_DIR, "data/Cityscapes/val.txt"), "r") as fv:
+    with open(os.path.join(CTSC_ROOT, "val.txt"), "r") as fv:
         lines_val = fv.readlines()
 
     lines = lines_train + lines_val
@@ -27,13 +25,13 @@ def generate_splits_step1(logger):
         for l in lines
     ]
 
-    with open(os.path.join(ROOT_DIR, "data/Cityscapes/train_B.txt"), "w") as f:
+    with open(os.path.join(CTSC_ROOT, "train_B.txt"), "w") as f:
         for l in lines_train:
             img = l.strip().split("/")[1]
             lbl = img.replace(IMAGES_FINAL, TARGET_FINAL)
             f.write(img + "@" + lbl + "\n")
 
-    with open(os.path.join(ROOT_DIR, "data/Cityscapes/test_B.txt"), "w") as f:
+    with open(os.path.join(CTSC_ROOT, "test_B.txt"), "w") as f:
         for l in lines_val:
             img = l.strip().split("/")[1]
             lbl = img.replace(IMAGES_FINAL, TARGET_FINAL)
@@ -58,39 +56,25 @@ def generate_splits_step1(logger):
             train_img.remove(img)
 
     # save the split
-    with open(os.path.join(ROOT_DIR, "data/Cityscapes/test_A.txt"), "w") as f:
+    with open(os.path.join(CTSC_ROOT, "test_A.txt"), "w") as f:
         for img in test_img:
             f.write(img[0] + "@" + img[1] + "\n")
 
-    with open(os.path.join(ROOT_DIR, "data/Cityscapes/train_A.txt"), "w") as f:
+    with open(os.path.join(CTSC_ROOT, "train_A.txt"), "w") as f:
         for img in train_img:
             f.write(str(img[0]) + "@" + img[1] + "\n")
 
 
 def generate_splits_step3(logger):
-    if PARTITION == "A":
-        # train A
-        with open(os.path.join(ROOT_DIR, "data/Cityscapes/train_A.txt"), "r") as f:
-            lines = f.readlines()
-            images = [
-                (
-                    l.strip().split("@")[0],
-                    l.strip().split("@")[1],
-                )
-                for l in lines
-            ]
-    if PARTITION == "B":
-        # train B
-        with open(os.path.join(ROOT_DIR, "data/Cityscapes/train.txt"), "r") as f:
-            lines = f.readlines()
-            images = [
-                (
-                    l.strip().split("/")[1],
-                    l.strip().split("/")[1].replace(IMAGES_FINAL, TARGET_FINAL),
-                )
-                for l in lines
-            ]
-
+    with open(os.path.join(CTSC_ROOT, f"train_{PARTITION}.txt"), "r") as f:
+        lines = f.readlines()
+    images = [
+        (
+            l.strip().split("@")[0],
+            l.strip().split("@")[1],
+        )
+        for l in lines
+    ]
     city_dic = {}
     for i in images:
         city_name = i[0].split("_")[0]
@@ -122,7 +106,8 @@ def generate_splits_step3(logger):
                     city_dic.pop(c)
 
         with open(
-            os.path.join(ROOT_DIR + "data/Cityscapes/", f"uniform{PARTITION}.json"), "w"
+            os.path.join(CTSC_ROOT, f"uniform{PARTITION}.json"),
+            "w",
         ) as outfile:
             json.dump(client_dict, outfile, indent=4)
 
@@ -146,9 +131,7 @@ def generate_splits_step3(logger):
                 for img, lbl in city_dic[city]:
                     client_dict[i].append((img, lbl))
         with open(
-            os.path.join(
-                ROOT_DIR + "data/Cityscapes/", f"heterogeneuos{PARTITION}.json"
-            ),
+            os.path.join(CTSC_ROOT, f"heterogeneuos{PARTITION}.json"),
             "w",
         ) as outfile:
             json.dump(client_dict, outfile, indent=4)

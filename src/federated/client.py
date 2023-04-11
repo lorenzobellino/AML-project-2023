@@ -1,28 +1,23 @@
 import copy
-import torch
 import wandb
-import torch.utils.data as torch_data
+import torch
 import torch.nn as nn
 import torch.optim as optim
-
-from torchvision.io import read_image
-from torch.utils.data import DataLoader
 from torch.backends import cudnn
+from torch.utils.data import DataLoader
 
-from config.baseline import *
-from config.transform import *
-from config.federated import *
+from .selftrainingloss import SelfTrainingLoss
+from config.config_options import *
 
 
 class Client:
     # def __init__(self, client_id, dataset, model, logger, writer, args, batch_size, world_size, rank, device=None, **kwargs):
-    def __init__(self, client_id, dataset, model):
+    def __init__(self, client_id, dataset, model, pseudo_lab=False, teacher_model=None):
         self.id = client_id
         self.dataset = dataset
         self.model = model  # copy.deepcopy(model)
         self.device = DEVICE
         self.batch_size = BATCH_SIZE
-        # self.args = args
         self.loader = DataLoader(
             self.dataset,
             batch_size=self.batch_size,
@@ -31,19 +26,19 @@ class Client:
             drop_last=True,
         )
 
-        # if args.random_seed is not None:
-        #     g = torch.Generator()
-        #     g.manual_seed(args.random_seed)
-        #     self.loader = data.DataLoader(self.dataset, batch_size=self.batch_size, worker_init_fn=seed_worker, num_workers=4, drop_last=True, pin_memory=True, generator=g)
-        # else:
-        #     self.loader = data.DataLoader(self.dataset, batch_size=self.batch_size, num_workers=4, drop_last=True, pin_memory=True)
-
-        # self.criterion = nn.CrossEntropyLoss(ignore_index=255, reduction='none')
+        # ADDED
+        self.pseudo_lab = pseudo_lab
+        self.teacher_model = copy.deepcopy(teacher_model)
+        # Define loss function
+        if self.pseudo_lab:
+            self.criterion = SelfTrainingLoss()
+            self.criterion.set_teacher(self.teacher_model)
+        else:
+            self.criterion = nn.CrossEntropyLoss(ignore_index=255)
 
     def client_train(self):
         num_train_samples = len(self.dataset)
-        # Define loss function
-        criterion = nn.CrossEntropyLoss(ignore_index=255)
+
         parameters_to_optimize = self.model.parameters()
         optimizer = optim.SGD(
             parameters_to_optimize, lr=LR, momentum=MOMENTUM, weight_decay=WEIGHT_DECAY
@@ -65,19 +60,22 @@ class Client:
                 labels = labels.to(DEVICE, dtype=torch.long)
 
                 optimizer.zero_grad()
+
                 predictions = self.model(images)
-                loss = criterion(predictions, labels.squeeze())
+                # ADDED
+                if self.pseudo_lab:
+                    loss = self.criterion(predictions, images.squeeze())
+                else:
+                    loss = self.criterion(predictions, labels.squeeze())
 
                 # Log loss
                 if current_step % LOG_FREQUENCY == 0:
                     print("Step {}, Loss {}".format(current_step, loss.item()))
-                    # wandb.log({f"client{self.id}/loss":loss})
                     wandb.log({f"client/loss": loss})
 
                 loss.backward()  # backward pass: computes gradients
                 optimizer.step()  # update weights based on accumulated gradients
 
-        # return num_train_samples, copy.deepcopy(self.model.state_dict()) #generate_update
         return num_train_samples, copy.deepcopy(
             self.model.state_dict()
         )  # generate_update

@@ -45,14 +45,14 @@ class Cityscapes(torch_data.Dataset):
             raise ValueError("filename is None")
 
         if id_client is not None:
-            with open(os.path.join(root, filename)) as f:
+            with open(os.path.join(self.root, filename)) as f:
                 dict_data = json.load(f)
 
             self.paths_images = [l[0] for l in dict_data[str(id_client)]]
             self.paths_tagets = [l[1] for l in dict_data[str(id_client)]]
 
         else:
-            with open(os.path.join(root, filename), "r") as f:
+            with open(os.path.join(self.root, filename), "r") as f:
                 lines = f.readlines()
 
             # manipulate each file row in order to obtain the correct path

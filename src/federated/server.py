@@ -1,14 +1,16 @@
-import numpy as np
 import copy
 import torch
+import numpy as np
 import torch.optim as optim
 
 from collections import OrderedDict
 
+from config.config_options import *
+
 
 class Server:
     # def __init__(self, model, logger, writer, local_rank, lr, momentum, optimizer=None):
-    def __init__(self, model, lr=None, momentum=None):
+    def __init__(self, model, lr=None, momentum=None, pseudo_lab=False):
         self.model = copy.deepcopy(model)
         self.model_params_dict = copy.deepcopy(self.model.state_dict())
         self.selected_clients = []
@@ -18,12 +20,19 @@ class Server:
         self.optimizer = optim.SGD(params=self.model.parameters(), lr=1, momentum=0.9)
         self.total_grad = 0
 
+        # ADDED
+        self.pseudo_lab = pseudo_lab
+
     def select_clients(self, my_round, possible_clients, num_clients=4):
         num_clients = min(num_clients, len(possible_clients))
         np.random.seed(my_round)
         self.selected_clients = np.random.choice(
             possible_clients, num_clients, replace=False
         )
+
+    def set_clients_teacher(self, train_clients):
+        for c in train_clients:
+            c.criterion.set_teacher(copy.deepcopy(self.model))
 
     def _compute_client_delta(self, cmodel):
         delta = OrderedDict.fromkeys(cmodel.keys())
@@ -32,7 +41,6 @@ class Server:
             self.model_params_dict.values(),
             cmodel.values(),
         ):
-            # print(f'check is_cuda     y:{y.is_cuda} x:{x.is_cuda}')
             delta[k] = (
                 y - x if "running" not in k and "num_batches_tracked" not in k else y
             )
@@ -42,7 +50,6 @@ class Server:
         self.optimizer.zero_grad()
 
         clients = self.selected_clients
-        losses = {}
 
         for i, c in enumerate(clients):
             print(f"CLIENT {i + 1}/{len(clients)} -> {c.id}:")
@@ -51,7 +58,6 @@ class Server:
                 self.model_params_dict
             )  # load_server_model_on_client
             out = c.client_train()
-            # c.save_bn_stats()
 
             num_samples, update = out
 
@@ -116,3 +122,8 @@ class Server:
         self.model_params_dict = copy.deepcopy(self.model.state_dict())
 
         self.updates = []
+
+    def test_model(
+        self, clients_to_test, metrics, ret_samples_bool=False, silobn_type=""
+    ):
+        return
