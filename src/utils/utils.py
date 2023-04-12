@@ -84,7 +84,7 @@ def decode_segmap(temp):
     return rgb
 
 
-def compute_miou(net, val_dataloader):
+def compute_miou(args, net, val_dataloader):
     net = net.to(DEVICE)
     net.train(False)  # Set Network to evaluation mode
     jaccard = MulticlassJaccardIndex(num_classes=NUM_CLASSES, ignore_index=255).to(
@@ -97,7 +97,10 @@ def compute_miou(net, val_dataloader):
         images = images.to(DEVICE, dtype=torch.float32)
         labels = labels.to(DEVICE, dtype=torch.long)
         # Forward Pass
-        outputs = net(images)
+        if args.network == "bisenet":
+            outputs = net(images)
+        elif args.network == "mobilenet":
+            outputs = net(images)["out"]
         # Get predictions
         _, preds = torch.max(outputs.data, 1)
 
@@ -111,7 +114,7 @@ def compute_miou(net, val_dataloader):
     return metric
 
 
-def validation_plot(net, val_dataloader, n_images):
+def validation_plot(args, net, val_dataloader, n_images):
     net = net.to(DEVICE)
     net.train(False)
     rows = 1
@@ -124,7 +127,12 @@ def validation_plot(net, val_dataloader, n_images):
         if n >= n_images:
             break
         imgsfloat = imgs.to(DEVICE, dtype=torch.float32)
-        outputs = net(imgsfloat)
+
+        if args.network == "bisenet":
+            outputs = net(imgsfloat)
+        elif args.network == "mobilenet":
+            outputs = net(imgsfloat)["out"]
+
         _, preds = torch.max(outputs.data, 1)
         # Added in order to use the decode_segmap function
         preds = preds.cpu()  # or equally preds = preds.to('cpu')
@@ -139,7 +147,7 @@ def validation_plot(net, val_dataloader, n_images):
             # )
             # print("pred:", preds.shape)
 
-            figure = plt.figure(figsize=(10, 10))
+            figure = plt.figure(figsize=(50, 50))
             figure.add_subplot(rows, columns, 1)
             # plt.imshow(imgs[0].permute((1, 2, 0)).squeeze())
             plt.imshow(imgs[i].permute((1, 2, 0)).squeeze())

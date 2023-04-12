@@ -12,6 +12,7 @@ from utils.utils import setup_transform, setup_wandb, compute_miou, validation_p
 from datasets.GTA import GTA5
 from datasets.cityscapes import Cityscapes
 from networks.bisenetv2 import BiSeNetV2
+from networks.deeplabv3 import deeplabv3_mobilenetv2
 from .client import Client
 from .server import Server
 
@@ -77,7 +78,7 @@ def training_loop(args, logger, server, train_clients, miou_dataloader):
         server.train_round()
         server.update_model()
 
-        miou = compute_miou(net=server.model, val_dataloader=miou_dataloader)
+        miou = compute_miou(args=args, net=server.model, val_dataloader=miou_dataloader)
         wandb.log({"server/miou": miou})
         logger.info(f"Validation MIoU: {miou}")
 
@@ -103,7 +104,10 @@ def main(args, logger):
     transforms = setup_transform()
 
     logger.info("Setting up the model")
-    model = BiSeNetV2(n_classes=NUM_CLASSES, output_aux=False, pretrained=False)
+    if args.network == "bisenet":
+        model = BiSeNetV2(n_classes=NUM_CLASSES, output_aux=False, pretrained=False)
+    elif args.network == "mobilenet":
+        model = deeplabv3_mobilenetv2(n_classes=NUM_CLASSES)
 
     if LOAD_CKPT:
         logger.info("Loading a previous checkpoint")
@@ -148,10 +152,12 @@ def main(args, logger):
 
     logger.info("Validation step")
     logger.info("Computing the MIOU")
-    miou = compute_miou(net=server.model, val_dataloader=val_dataloader)
+    miou = compute_miou(args=args, net=server.model, val_dataloader=val_dataloader)
     wandb.log({"server/miou": miou})
     wandb.finish()
     logger.info(f"Validation MIoU: {miou}")
 
     logger.info("Creating the validation plot")
-    validation_plot(net=server.model, val_dataloader=val_dataloader, n_images=5)
+    validation_plot(
+        args=args, net=server.model, val_dataloader=val_dataloader, n_images=5
+    )
