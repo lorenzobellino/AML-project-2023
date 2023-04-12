@@ -70,6 +70,13 @@ if __name__ == "__main__":
         type=str,
         help="Load the model from previous run",
     )
+    parser.add_argument(
+        "-net",
+        "--network",
+        type=str,
+        help="Network to use: <bisenet> OR <mobilenet>",
+        required=True,
+    )
     parser.add_argument("-d", "--debug", action="store_true", help="Enable debug mode")
 
     args = parser.parse_args()

@@ -17,10 +17,19 @@ from utils.utils import setup_transform, setup_wandb, compute_miou, validation_p
 from datasets.GTA import GTA5
 from datasets.cityscapes import Cityscapes
 from networks.bisenetv2 import BiSeNetV2
+from networks.deeplabv3 import deeplabv3_mobilenetv2
 from .styleaugment import StyleAugment
 
 
 def setup_dataloader(args, transforms, logger):
+    """Setup the dataloader for the training and validation
+    Args:
+        args: the arguments from the command line
+        transforms: the transforms to apply to the images
+        logger: the logger to log the information
+    Returns:
+        train_dataloader: the dataloader for the training
+    """
     if args.dataset == "CTSC":
         train_dataset = Cityscapes(
             root=CTSC_ROOT,
@@ -75,6 +84,12 @@ def setup_dataloader(args, transforms, logger):
 
 
 def training_loop(args, logger, model, train_dataloader, miou_dataloader):
+    """training loop for the centralized training
+
+    Returns:
+        best_miou : the best miou reached during the training phase (if calculated else 0)
+    """
+
     criterion = nn.CrossEntropyLoss(ignore_index=255)
     parameters_to_optimize = model.parameters()
     optimizer = optim.SGD(
@@ -96,8 +111,11 @@ def training_loop(args, logger, model, train_dataloader, miou_dataloader):
             labels = labels.to(DEVICE, dtype=torch.long)
             model.train()
             optimizer.zero_grad()
+            if args.network == "bisenet":
+                predictions = model(images)
+            elif args.network == "mobilenet":
+                predictions = model(images)["out"]
 
-            predictions = model(images)
             loss = criterion(predictions, labels.squeeze())
 
             # Log loss
@@ -146,7 +164,13 @@ def main(args, logger):
     setup_wandb(args, logger)
 
     logger.info("Setting up the model")
-    model = BiSeNetV2(n_classes=NUM_CLASSES, output_aux=False, pretrained=False)
+    if args.network == "bisenet":
+        model = BiSeNetV2(n_classes=NUM_CLASSES, output_aux=False, pretrained=False)
+    elif args.network == "mobilenet":
+        model = deeplabv3_mobilenetv2(n_classes=NUM_CLASSES)
+    else:
+        logger.error("Specify a valid network (bisenet or mobilenet)")
+        exit()
 
     if LOAD_CKPT:
         logger.info("Loading a previous checkpoint")
@@ -195,7 +219,10 @@ def main(args, logger):
     )
 
     torch.cuda.empty_cache()
-    model = BiSeNetV2(NUM_CLASSES, output_aux=False, pretrained=True)
+    if args.network == "bisenet":
+        model = BiSeNetV2(NUM_CLASSES, output_aux=False, pretrained=True)
+    elif args.network == "mobilenet":
+        model = deeplabv3_mobilenetv2(n_classes=NUM_CLASSES)
     logger.info("Extracting the best model ...")
     if args.dataset == "CTSC":
         model.load_state_dict(torch.load(f"./models/model_step{args.step}.pth"))
@@ -211,11 +238,11 @@ def main(args, logger):
 
     logger.info("Validation step")
     logger.info("computing miou ...")
-    miou = compute_miou(net=model, val_dataloader=val_dataloader)
+    miou = compute_miou(args=args, net=model, val_dataloader=val_dataloader)
     logger.info("Validation MIoU: {}".format(miou))
     wandb.log({"val/miou": miou})
     wandb.finish()
 
     logger.info("Creating sample results ...")
-    validation_plot(net=model, val_dataloader=val_dataloader, n_images=5)
+    validation_plot(args=args, net=model, val_dataloader=val_dataloader, n_images=5)
     torch.cuda.empty_cache()
