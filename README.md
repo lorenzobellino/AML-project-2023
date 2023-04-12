@@ -23,7 +23,7 @@ This paper proposes a federated semantic segmentation framework for self-driving
 
 5) run the script
  ```bash
-    poetry run python src/run.py -s <STEP> -dts <DATASET>
+    poetry run python src/run.py -s <STEP> -dts <DATASET> -net <NETWORK>
 ```
 to see other run options, run
 ```bash
