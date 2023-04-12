@@ -85,7 +85,7 @@ def training_loop(args, logger, server, train_clients, miou_dataloader):
             logger.info(f"Saving the model")
             torch.save(
                 server.model.state_dict(),
-                CKPT_PATH + model_base_name + f"_P{PARTITION}_S{SPLIT}_round{r:02}.pth",
+                CKPT_DIR + model_base_name + f"_P{PARTITION}_S{SPLIT}_round{r:02}.pth",
             )
 
 
