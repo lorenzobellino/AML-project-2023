@@ -33,7 +33,7 @@ to see other run options, run
 ## Notebooks on colab
 ---
 
-The same code is available in a notebook format [here](./fsseg.ipynb) and can be run in colab for free. Since this code is only partially tested due to GPU limitations this could be the better option.
+The same code is available in a notebook format [here](https://github.com/lorenzobellino/Federated-SS-for-self-driving-cars/blob/main/fssfsdc.ipynb) and can be run in colab for free. Since this code is only partially tested due to GPU limitations this could be the better option.
 In order to run this notebook:
 1) Create a new folder in your google drive
 2) Upload the "data" folder from this repository to the folder you created in step 1
