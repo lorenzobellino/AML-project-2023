@@ -54,9 +54,6 @@ if __name__ == "__main__":
         + "\t4: Domain Adaptaion:\n",
         required=True,
     )
-    # parser.add_argument(
-    #     "-p", "--pretrain", action="store_true", help="Step 4 Pre-training phase"
-    # )
     parser.add_argument(
         "-dts",
         "--dataset",
