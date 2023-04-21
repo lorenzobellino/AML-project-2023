@@ -7,6 +7,8 @@
 
 This paper proposes a federated semantic segmentation framework for self-driving cars that leverages the power of federated learning to train a deep neural network using segmented datasets obtained from multiple vehicles while preserving data privacy. Traditional methods of semantic segmentation rely on centralized computing, which is impractical in real-world scenarios. The proposed framework includes a central server that coordinates the training process and multiple participating vehicles that provide their segmented data. In addition to the proposed framework, the paper applied domain generalization techniques such as Fourier Domain Adaptation (FDA) to improve the model's generalization and robustness, as well as implemented a pseudo labelling technique to overcome the challenge of unlabelled data from the participating vehicles in a real-world applications. The combination of these techniques with federated learning resulted in a robust and efficient semantic segmentation framework for self-driving cars.
 
+You can read the full report [here](./Report.pdf)
+
 ## Setup
 ---
 
